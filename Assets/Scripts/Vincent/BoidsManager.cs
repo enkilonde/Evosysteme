@@ -1,9 +1,18 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+
 
 public class BoidsManager : MonoBehaviour {
 
     public GameObject prefabBoid;
+
+    public bool haveLeaders = false;
+    private bool prevStateLeader = false;
+
+    private List<int> leaders;
+
+    public int nbLeaders = 5;
 
     public int nbBoids = 20;
 
@@ -29,6 +38,8 @@ public class BoidsManager : MonoBehaviour {
 
     private Vector3 sumAll;
 
+    bool isLeader = false;
+
 	// Use this for initialization
 	void Start ()
     {
@@ -43,14 +54,44 @@ public class BoidsManager : MonoBehaviour {
             boid.transform.parent = transform;
             tabBoids[i] = boid;
         }
+        leaders = new List<int>();
+        if(haveLeaders)
+        {
+            SelectLeaders();
+        }
 	}
 	
 	// Update is called once per frame
 	void Update ()
     {
+        if(prevStateLeader != haveLeaders)
+        {
+            prevStateLeader = haveLeaders;
+            if(haveLeaders)
+            {
+                SelectLeaders();
+            }
+            else
+            {
+                NoLeaders();
+            }
+        }
+
+        if(Input.GetKeyDown(KeyCode.T))
+        {
+            ToggleTrails();
+        }
+
         Move_All_Boids();
 	}
 
+    void ToggleTrails()
+    {
+        for(int i = 0; i < tabBoids.Length; i++)
+        {
+            tabBoids[i].GetComponent<TrailRenderer>().enabled = !tabBoids[i].GetComponent<TrailRenderer>().enabled;
+        }
+    }
 
     void Move_All_Boids()
     {
@@ -60,11 +101,30 @@ public class BoidsManager : MonoBehaviour {
         for(int i = 0; i < tabBoids.Length; i++)
         {
             vel = tabBoids[i].transform.forward;
+            v3 = Vector3.zero;
 
             v1 = DirToCenter(i);
             v2 = AvoidOthers(i, keepDistance);
-            v3 = GroupUp(i);
-
+            if(haveLeaders)
+            {
+                isLeader = false;
+                for(int j = 0; j < leaders.Count; j++)
+                {
+                    if(i == leaders[j])
+                    {
+                        isLeader = true;
+                        break;
+                    }
+                }
+                if(!isLeader)
+                {
+                    v3 = FollowLeaders(i);
+                }
+            }
+            else
+            {
+                v3 = GroupUp(i);
+            }
             v4 = ClampArea(i);
 
             vel = vel + v1 + v2 + v3 + v4;
@@ -76,11 +136,48 @@ public class BoidsManager : MonoBehaviour {
 
             //DEBUG
             /*
-            if(i == 0)
+            if(i == 50)
             {
-                Debug.Log("v1 = " + v1 + " ||  v2 = " + v2 + " ||  v3 = " + v3);
+                Debug.Log("v1 = " + v1 + " ||  v2 = " + v2 + " ||  v3 = " + v3 + " ||  v4 = " + v4);
             }
             */
+        }
+    }
+
+    private void SelectLeaders()
+    {
+        string str = "New Leaders are : ";
+        if (leaders.Count > 0)
+        {
+            for (int i = 0; i < leaders.Count; i++)
+            {
+                tabBoids[leaders[i]].GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f);
+                tabBoids[leaders[i]].GetComponent<TrailRenderer>().material.SetColor("_Color", new Color(1f, 1f, 1f));
+            }
+            leaders.Clear();
+        }
+        for(int i = 0; i < nbLeaders; i++)
+        {
+            int rd = Random.Range(0, tabBoids.Length);
+            leaders.Add(rd);
+            str += rd + "  ";
+            tabBoids[rd].GetComponent<MeshRenderer>().material.color = new Color(1f, 0f, 0f);
+            tabBoids[leaders[i]].GetComponent<TrailRenderer>().material.SetColor("_Color", new Color(1f, 0f, 0f));
+        }
+        Debug.Log(str);
+
+    }
+
+    private void NoLeaders()
+    {
+        if (leaders.Count > 0)
+        {
+            for (int i = 0; i < leaders.Count; i++)
+            {
+                tabBoids[leaders[i]].GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f);
+                tabBoids[leaders[i]].GetComponent<TrailRenderer>().material.SetColor("_Color", new Color(1f, 1f, 1f));
+            }
+            leaders.Clear();
         }
     }
 
@@ -113,30 +210,44 @@ public class BoidsManager : MonoBehaviour {
         Vector3 posMe, posOther;
         posMe = tabBoids[index].transform.position;
 
-        for (int i = 0; i < tabBoids.Length; i++)
+        Collider[] around = Physics.OverlapSphere(posMe, distance);
+        for(int i = 0; i < around.Length; i++)
         {
-            posOther = tabBoids[i].transform.position;
-
-            if (Vector3.Distance(posMe, posOther) < distance)
-            {
-                dir += posMe - posOther;
-            }
-
+            posOther = around[i].transform.position;
+            dir += posMe - posOther;
         }
+
         return dir.normalized / avoidInfluence;
     }
 
+    float SquaredDistance(Vector3 a, Vector3 b)
+    {
+        return ((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
+    }
 
     Vector3 GroupUp(int index)
     {
         Vector3 dir = Vector3.zero;
+        Vector3 posMe = tabBoids[index].transform.position;
         int nb = 0;
+
+        Collider[] around = Physics.OverlapSphere(posMe, otherRange);
+        for (int i = 0; i < around.Length; i++)
+        {
+            dir += around[i].transform.forward;
+            nb++;
+        }
+        if(nb > 0)
+        {
+            dir /= nb;
+        }
+        /*
         for (int i = 0; i < tabBoids.Length; i++)
         {
            
             if (i != index)
             {
-                if(Vector3.Distance(tabBoids[index].transform.position, tabBoids[i].transform.position) < otherRange)
+                if(SquaredDistance(tabBoids[index].transform.position, tabBoids[i].transform.position) < (otherRange* otherRange))
                 {
                     dir += tabBoids[i].transform.forward;
                     nb++;
@@ -148,8 +259,31 @@ public class BoidsManager : MonoBehaviour {
             }
             //dir /= (tabBoids.Length - 1);
         }
-
+        */
         return dir / otherInfluence;
+    }
+
+    Vector3 FollowLeaders(int index)
+    {
+        Vector3 dir;
+        int closest = 0;
+        Vector3 selfpos = tabBoids[index].transform.position;
+        float dist = 10000000f;
+        for(int i = 0; i < leaders.Count; i++)
+        {
+            float ndist = SquaredDistance(selfpos, tabBoids[leaders[i]].transform.position);
+            if (ndist < dist)
+            {
+                dist = ndist;
+                closest = leaders[i];
+            }
+        }
+        dir = (tabBoids[closest].transform.position - selfpos);
+        dir += tabBoids[closest].transform.forward;
+        dir.Normalize();
+        
+        //Debug.Log(" Closest leader =  " + closest);
+        return dir / (otherInfluence*otherInfluence);
     }
 
     Vector3 ClampArea( int index)
@@ -161,4 +295,5 @@ public class BoidsManager : MonoBehaviour {
         }
         return dir / clampInfluence;
     }
+
 }

@@ -42,10 +42,6 @@ public class Boid : MonoBehaviour
 
         transform.position += velocity * Time.deltaTime;
         transform.LookAt(transform.position + velocity);
-
-        //Debug.DrawRay(transform.position, separation, Color.green);
-        //Debug.DrawRay(transform.position, cohesion, Color.magenta);
-        //Debug.DrawRay(transform.position, alignment, Color.blue);
     }
 
     void CalculateVelocity()

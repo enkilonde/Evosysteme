@@ -3,6 +3,8 @@ using System.Collections;
 
 public class BoidsManager : MonoBehaviour {
 
+    public GameObject prefabBoid;
+
     public int nbBoids = 20;
 
     public float spawnCube = 10.0f;
@@ -11,7 +13,7 @@ public class BoidsManager : MonoBehaviour {
 
     public float keepDistance = 5.0f;
 
-    public GameObject prefabBoid;
+    public float avoidInfluence = 10f;
 
     public float centerInfluence = 100;
 
@@ -121,7 +123,7 @@ public class BoidsManager : MonoBehaviour {
             }
 
         }
-        return dir.normalized;
+        return dir.normalized / avoidInfluence;
     }
 
 

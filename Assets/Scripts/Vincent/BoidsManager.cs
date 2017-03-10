@@ -16,8 +16,6 @@ public class BoidsManager : MonoBehaviour {
 
     public int nbBoids = 20;
 
-    public float spawnCube = 10.0f;
-
     public float speed = 0.1f;
 
     public float keepDistance = 5.0f;
@@ -26,7 +24,8 @@ public class BoidsManager : MonoBehaviour {
 
     public float centerInfluence = 100;
 
-    public float sphereClamp = 20.0f;
+    public float radiusClamp = 20.0f;
+    public float heightClamp = 10.0f;
     public float clampInfluence = 10.0f;
 
     public float otherRange = 5.0f;
@@ -45,12 +44,13 @@ public class BoidsManager : MonoBehaviour {
     {
         tabBoids = new GameObject[nbBoids];
         Vector3 pos;
-        float range = spawnCube * 0.5f;
+        float rangev = heightClamp;
+        float rangeh = radiusClamp;
 
         for (int i = 0; i < nbBoids; i++)
         {
-            pos = new Vector3(Random.Range(-range, range), Random.Range(-range, range), Random.Range(-range, range));
-            GameObject boid = Instantiate(prefabBoid, pos, Random.rotation) as GameObject;
+            pos = new Vector3(Random.Range(-rangeh, rangeh), Random.Range(-rangev, rangev), Random.Range(-rangeh, rangeh));
+            GameObject boid = Instantiate(prefabBoid, transform.position+pos, Random.rotation) as GameObject;
             boid.transform.parent = transform;
             tabBoids[i] = boid;
         }
@@ -207,17 +207,38 @@ public class BoidsManager : MonoBehaviour {
     Vector3 AvoidOthers(int index, float distance)
     {
         Vector3 dir = Vector3.zero;
-        Vector3 posMe, posOther;
-        posMe = tabBoids[index].transform.position;
+        Vector3 posMe = tabBoids[index].transform.position;
+        //méthode en parcours total
+        /*
+        int nb = 0;
 
-        Collider[] around = Physics.OverlapSphere(posMe, distance);
-        for(int i = 0; i < around.Length; i++)
+        for(int i = 0; i < tabBoids.Length; i++)
         {
-            posOther = around[i].transform.position;
-            dir += posMe - posOther;
+            if(SquaredDistance(posMe, tabBoids[i].transform.position) < distance*distance)
+            {
+                dir += (posMe - tabBoids[i].transform.position).normalized;
+                nb++;
+            }
         }
 
-        return dir.normalized / avoidInfluence;
+        if(nb>0)
+        {
+            dir /= nb;
+        }
+        */
+        // méthode en OverlapSphere
+        Collider[] around = Physics.OverlapSphere(posMe, distance);
+        int l = around.Length;
+        for (int i = 0; i < l; i++)
+        {
+            dir += (posMe - around[i].transform.position).normalized;
+        }
+        if (l > 0)
+        {
+            dir /= l;
+        }
+        
+        return dir / avoidInfluence;
     }
 
     float SquaredDistance(Vector3 a, Vector3 b)
@@ -229,37 +250,17 @@ public class BoidsManager : MonoBehaviour {
     {
         Vector3 dir = Vector3.zero;
         Vector3 posMe = tabBoids[index].transform.position;
-        int nb = 0;
 
         Collider[] around = Physics.OverlapSphere(posMe, otherRange);
-        for (int i = 0; i < around.Length; i++)
+        int l = around.Length;
+        for (int i = 0; i < l; i++)
         {
             dir += around[i].transform.forward;
-            nb++;
         }
-        if(nb > 0)
+        if(l > 0)
         {
-            dir /= nb;
+            dir /= l;
         }
-        /*
-        for (int i = 0; i < tabBoids.Length; i++)
-        {
-           
-            if (i != index)
-            {
-                if(SquaredDistance(tabBoids[index].transform.position, tabBoids[i].transform.position) < (otherRange* otherRange))
-                {
-                    dir += tabBoids[i].transform.forward;
-                    nb++;
-                }
-            }
-            if(nb > 0)
-            {
-                dir /= nb;
-            }
-            //dir /= (tabBoids.Length - 1);
-        }
-        */
         return dir / otherInfluence;
     }
 
@@ -282,16 +283,28 @@ public class BoidsManager : MonoBehaviour {
         dir += tabBoids[closest].transform.forward;
         dir.Normalize();
         
-        //Debug.Log(" Closest leader =  " + closest);
         return dir / (otherInfluence*otherInfluence);
     }
 
     Vector3 ClampArea( int index)
     {
         Vector3 dir = Vector3.zero;
-        if(Vector3.Distance(Vector3.zero, tabBoids[index].transform.position) > sphereClamp)
+        Vector3 boid = tabBoids[index].transform.position;
+        if (boid.y > transform.position.y + heightClamp)
         {
-            dir = tabBoids[index].transform.position.normalized * -1f;
+            dir += Vector3.up * -1;
+        }
+        else
+        {
+            if (boid.y < transform.position.y - heightClamp)
+            {
+                dir += Vector3.up;
+            }
+        }
+        
+        if(SquaredDistance(transform.position, tabBoids[index].transform.position) > radiusClamp* radiusClamp)
+        {
+            dir += tabBoids[index].transform.position.normalized * -1f;
         }
         return dir / clampInfluence;
     }

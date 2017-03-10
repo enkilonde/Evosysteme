@@ -152,7 +152,7 @@ public class BoidsManager : MonoBehaviour {
             for (int i = 0; i < leaders.Count; i++)
             {
                 tabBoids[leaders[i]].GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f);
-                tabBoids[leaders[i]].GetComponent<TrailRenderer>().material.SetColor("_Color", new Color(1f, 1f, 1f));
+                tabBoids[leaders[i]].GetComponent<TrailRenderer>().material.SetColor("_EmisColor", new Color(0f, 0f, 0f));
             }
             leaders.Clear();
         }
@@ -162,7 +162,7 @@ public class BoidsManager : MonoBehaviour {
             leaders.Add(rd);
             str += rd + "  ";
             tabBoids[rd].GetComponent<MeshRenderer>().material.color = new Color(1f, 0f, 0f);
-            tabBoids[leaders[i]].GetComponent<TrailRenderer>().material.SetColor("_Color", new Color(1f, 0f, 0f));
+            tabBoids[leaders[i]].GetComponent<TrailRenderer>().material.SetColor("_EmisColor", new Color(1f, 0f, 0f));
         }
         Debug.Log(str);
 
@@ -175,7 +175,7 @@ public class BoidsManager : MonoBehaviour {
             for (int i = 0; i < leaders.Count; i++)
             {
                 tabBoids[leaders[i]].GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f);
-                tabBoids[leaders[i]].GetComponent<TrailRenderer>().material.SetColor("_Color", new Color(1f, 1f, 1f));
+                tabBoids[leaders[i]].GetComponent<TrailRenderer>().material.SetColor("_EmisColor", new Color(0f, 0f, 0f));
             }
             leaders.Clear();
         }

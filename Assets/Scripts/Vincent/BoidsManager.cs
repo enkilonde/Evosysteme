@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -6,6 +7,17 @@ using System.Collections.Generic;
 public class BoidsManager : MonoBehaviour {
 
     public GameObject prefabBoid;
+
+    private InputField fieldBoids;
+    private InputField fieldLeaders;
+    private Toggle toggleFollow;
+
+    private MeshFilter myMesh;
+
+    public Mesh[] Meshes;
+
+    bool mesh = true;
+    bool cone = false;
 
     public bool haveLeaders = false;
     private bool prevStateLeader = false;
@@ -37,33 +49,111 @@ public class BoidsManager : MonoBehaviour {
 
     private Vector3 sumAll;
 
+    GameObject BoidsContainer;
+
     bool isLeader = false;
 
 	// Use this for initialization
 	void Start ()
     {
+        myMesh = GetComponent<MeshFilter>();
+        myMesh.mesh = Meshes[0];
+
+        BoidsContainer = new GameObject("BOIDS");
+        BoidsContainer.transform.position = transform.position;
+
+        fieldBoids = GameObject.Find("InputBoids").GetComponent<InputField>();
+        fieldLeaders = GameObject.Find("InputLeaders").GetComponent<InputField>();
+        toggleFollow = GameObject.Find("Leader").GetComponent<Toggle>();
+
+        CreateBoids();    
+	}
+
+    public void CreateBoids()
+    {
         tabBoids = new GameObject[nbBoids];
-        Vector3 pos;
+
         float rangev = heightClamp;
         float rangeh = radiusClamp;
 
         for (int i = 0; i < nbBoids; i++)
         {
+            Vector3 pos;
             pos = new Vector3(Random.Range(-rangeh, rangeh), Random.Range(-rangev, rangev), Random.Range(-rangeh, rangeh));
-            GameObject boid = Instantiate(prefabBoid, transform.position+pos, Random.rotation) as GameObject;
-            boid.transform.parent = transform;
+            GameObject boid = Instantiate(prefabBoid, BoidsContainer.transform.position + pos, Random.rotation) as GameObject;
+            boid.name = i.ToString();
+            boid.transform.parent = BoidsContainer.transform;
             tabBoids[i] = boid;
         }
         leaders = new List<int>();
-        if(haveLeaders)
+        if (haveLeaders)
         {
             SelectLeaders();
         }
-	}
-	
+    }
+    
+    public void BoidValueChange()
+    {
+        if ( fieldBoids.text.Length > 0)
+        {
+            nbBoids = int.Parse(fieldBoids.text);
+        }
+    }
+    public void LeaderValueChange()
+    {
+        if (fieldLeaders.text.Length > 0)
+        {
+            nbLeaders = int.Parse(fieldLeaders.text);
+        }
+    }
+
+    public void FollowToggle()
+    {
+        haveLeaders = toggleFollow.isOn;
+    }
+    
+    public void ApplyReset()
+    {
+        for(int i = 0; i<tabBoids.Length; i++)
+        {
+            Destroy(tabBoids[i]);
+        }
+        CreateBoids();
+
+    }
+
 	// Update is called once per frame
 	void Update ()
     {
+        if (Input.GetKeyDown(KeyCode.F1))
+        {
+            heightClamp = 100;
+            radiusClamp = 40;
+            myMesh.mesh = Meshes[0];
+            cone = false;
+        }
+        if (Input.GetKeyDown(KeyCode.F2))
+        {
+            heightClamp = 25;
+            radiusClamp = 150;
+            myMesh.mesh = Meshes[0];
+            cone = false;
+        }
+        if (Input.GetKeyDown(KeyCode.F3))
+        {
+            heightClamp = 100;
+            radiusClamp = 40;
+            myMesh.mesh = Meshes[1];
+            cone = true;
+        }
+        if(Input.GetKeyDown(KeyCode.B))
+        {
+            mesh = !mesh;
+            GetComponent<MeshRenderer>().enabled = mesh;
+        }
+
+
+        transform.localScale = new Vector3(radiusClamp * 2, radiusClamp * 2, heightClamp * 2);
         if(prevStateLeader != haveLeaders)
         {
             prevStateLeader = haveLeaders;
@@ -125,7 +215,16 @@ public class BoidsManager : MonoBehaviour {
             {
                 v3 = GroupUp(i);
             }
-            v4 = ClampArea(i);
+
+            if(cone)
+            {
+                v4 = ClampCone(i);
+            }
+            else
+            {
+                v4 = ClampArea(i);
+            }
+            
 
             vel = vel + v1 + v2 + v3 + v4;
             vel = vel.normalized;
@@ -301,10 +400,40 @@ public class BoidsManager : MonoBehaviour {
                 dir += Vector3.up;
             }
         }
-        
-        if(SquaredDistance(transform.position, tabBoids[index].transform.position) > radiusClamp* radiusClamp)
+        Vector3 posXZ = new Vector3(transform.position.x, 0, transform.position.z);
+        Vector3 boidXZ = new Vector3(tabBoids[index].transform.position.x, 0, tabBoids[index].transform.position.z);
+        if (SquaredDistance(posXZ, boidXZ) > radiusClamp* radiusClamp)
         {
-            dir += tabBoids[index].transform.position.normalized * -1f;
+            // dir += tabBoids[index].transform.position.normalized * -1f;
+
+            dir += (posXZ - boidXZ).normalized;
+        }
+        return dir / clampInfluence;
+    }
+
+    Vector3 ClampCone(int index)
+    {
+        Vector3 dir = Vector3.zero;
+        Vector3 boid = tabBoids[index].transform.position;
+        if (boid.y > transform.position.y + heightClamp)
+        {
+            dir += Vector3.up * -1;
+        }
+        else
+        {
+            if (boid.y < transform.position.y - heightClamp)
+            {
+                dir += Vector3.up;
+            }
+        }
+        Vector3 posXZ = new Vector3(transform.position.x, 0, transform.position.z);
+        Vector3 boidXZ = new Vector3(tabBoids[index].transform.position.x, 0, tabBoids[index].transform.position.z);
+        float heightPercent = 0.5f + (tabBoids[index].transform.position.y - transform.position.y) / (heightClamp*2);
+        if (SquaredDistance(posXZ, boidXZ) > radiusClamp * radiusClamp * heightPercent)
+        {
+            // dir += tabBoids[index].transform.position.normalized * -1f;
+
+            dir += (posXZ - boidXZ).normalized;
         }
         return dir / clampInfluence;
     }

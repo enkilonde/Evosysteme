@@ -38,11 +38,12 @@ public class MonsterManager : MonoBehaviour
         indexToDisplay2 = int.Parse(Selectors[1].text);
         int m1 = indexToDisplay1;
         int m2 = indexToDisplay2;
-        M1 = winners[(int)Mathf.Clamp(m1, 0, winners.Count)];
-        M2 = winners[(int)Mathf.Clamp(m2, 0, winners.Count)];
+        M1 = winners[(int)Mathf.Clamp(m1, 0, winners.Count-1)];
+        M2 = winners[(int)Mathf.Clamp(m2, 0, winners.Count-1)];
         DisplayMonsterStats(Displays[0], M1);
         DisplayMonsterStats(Displays[1], M2);
 
+        Displays[2].text = "Number of monsters : " + winners.Count;
 
         if (Input.GetKeyDown(KeyCode.M))
         {
@@ -53,7 +54,7 @@ public class MonsterManager : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.F))
         {
-            winners = OneRound(winners);
+            DoOneRound();
         }
 
         if (Input.GetKeyDown(KeyCode.G))
@@ -82,7 +83,7 @@ public class MonsterManager : MonoBehaviour
         return result;
     }
 
-    void OneGeneration()
+    public void OneGeneration()
     {
 
         while(winners.Count > 1)
@@ -221,6 +222,41 @@ public class MonsterManager : MonoBehaviour
         }
 
         return monsters;
+    }
+
+
+
+    public void MutateAll()
+    {
+        MutateMonster(winners);
+    }
+
+    public void CrossAll()
+    {
+        winners = CroisementMonsters(winners);
+    }
+
+    public void DoOneRound()
+    {
+        winners = OneRound(winners);
+    }
+
+    public void ReGenerateMonsters()
+    {
+
+        int n = 500;
+
+        if(Selectors[2].text.Length > 0)
+        {
+            n = int.Parse(Selectors[2].text);
+        }
+
+        if ( n < 2)
+        {
+            n = 500;
+        }
+        winners = GenerateNewMonsters(n);
+
     }
 
     void DisplayMonsterStats(Text targetText, Monster M1)

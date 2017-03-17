@@ -84,11 +84,12 @@ public class BoidsManager : MonoBehaviour {
             GameObject boid = Instantiate(prefabBoid, BoidsContainer.transform.position + pos, Random.rotation) as GameObject;
             boid.name = i.ToString();
             Transform child;
-            if(boid.transform.GetChild(0) != null)
+            if(boid.transform.childCount >0)
             {
                 child = boid.transform.GetChild(0);
                 child.GetComponent<Animation>()["CrowFlap"].time = Random.Range(0f, 1f);
             }
+            
             boid.transform.parent = BoidsContainer.transform;
             tabBoids[i] = boid;
         }

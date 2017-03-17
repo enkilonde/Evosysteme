@@ -136,7 +136,7 @@ public class Monster
         float OriginDeltaTime = Time.deltaTime;
         float animTime = 2 / OriginDeltaTime;
         float attackInterval = animTime/attackSpeed;
-        Debug.Log(animTime);
+        //Debug.Log(animTime);
         for (float i = 0; i < animTime; i+= 1)
         {
             yield return null;

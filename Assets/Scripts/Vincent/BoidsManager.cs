@@ -66,6 +66,7 @@ public class BoidsManager : MonoBehaviour {
         fieldLeaders = GameObject.Find("InputLeaders").GetComponent<InputField>();
         toggleFollow = GameObject.Find("Leader").GetComponent<Toggle>();
 
+
         CreateBoids();    
 	}
 
@@ -82,6 +83,12 @@ public class BoidsManager : MonoBehaviour {
             pos = new Vector3(Random.Range(-rangeh, rangeh), Random.Range(-rangev, rangev), Random.Range(-rangeh, rangeh));
             GameObject boid = Instantiate(prefabBoid, BoidsContainer.transform.position + pos, Random.rotation) as GameObject;
             boid.name = i.ToString();
+            Transform child;
+            if(boid.transform.GetChild(0) != null)
+            {
+                child = boid.transform.GetChild(0);
+                child.GetComponent<Animation>()["CrowFlap"].time = Random.Range(0f, 1f);
+            }
             boid.transform.parent = BoidsContainer.transform;
             tabBoids[i] = boid;
         }
@@ -127,8 +134,8 @@ public class BoidsManager : MonoBehaviour {
     {
         if (Input.GetKeyDown(KeyCode.F1))
         {
-            heightClamp = 100;
-            radiusClamp = 40;
+            heightClamp = 75;
+            radiusClamp = 30;
             myMesh.mesh = Meshes[0];
             cone = false;
         }
@@ -141,8 +148,8 @@ public class BoidsManager : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.F3))
         {
-            heightClamp = 100;
-            radiusClamp = 40;
+            heightClamp = 75;
+            radiusClamp = 30;
             myMesh.mesh = Meshes[1];
             cone = true;
         }

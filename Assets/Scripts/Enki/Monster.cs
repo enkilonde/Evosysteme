@@ -152,6 +152,7 @@ public class Monster
 
         transformDisplay.position = endPos;
         animating = false;
+        
     }
 
 
